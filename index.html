@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Agenda Escolar</title>
+<meta name="description" content="Tu horario, tareas, eventos y recordatorios escolares, disponibles incluso sin internet." />
+<meta name="theme-color" content="#1F3D33" />
+<!-- Configura estas URLs en tu backend para sincronización y web push reales. -->
+<meta name="agenda-sync-url" content="" />
+<meta name="agenda-push-subscribe-url" content="" />
+<meta name="agenda-vapid-public-key" content="" />
+<link rel="manifest" href="manifest.json" />
+<link rel="icon" href="icons/icon-192.png" />
+<link rel="apple-touch-icon" href="icons/icon-192.png" />
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<div class="app">
+  <!-- Sidebar / tabs -->
+  <aside class="sidebar">
+    <div class="brand">Agenda <small>ESCOLAR</small></div>
+    <nav class="tabs" id="tabs">
+      <button class="tab-btn" data-page="inicio" aria-current="true">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/></svg>
+        Inicio
+      </button>
+      <button class="tab-btn" data-page="horario">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 3v3M16 3v3"/></svg>
+        Horario
+      </button>
+      <button class="tab-btn" data-page="tareas">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>
+        Tareas
+        <span class="count" id="count-tareas" hidden>0</span>
+      </button>
+      <button class="tab-btn" data-page="eventos">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        Eventos
+      </button>
+      <button class="tab-btn" data-page="recordatorios">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 01-3.4 0"/></svg>
+        Recordatorios
+        <span class="count" id="count-recordatorios" hidden>0</span>
+      </button>
+    </nav>
+    <div class="sidebar-foot">
+      <span class="status-pill" id="status-pill"><span class="status-dot"></span><span id="status-text">En línea</span></span>
+      <button id="notification-btn" type="button">Activar notificaciones</button>
+      <button id="install-btn">Instalar app</button>
+    </div>
+  </aside>
+
+  <!-- Mobile top bar -->
+  <div class="mobile-topbar">
+    <div class="brand">Agenda</div>
+    <span class="status-pill" id="status-pill-mobile"><span class="status-dot"></span><span id="status-text-mobile">En línea</span></span>
+  </div>
+
+  <main>
+    <!-- INICIO -->
+    <section class="page active" id="page-inicio">
+      <div class="page-head">
+        <div>
+          <h1 id="saludo">Hola de nuevo</h1>
+          <p id="fecha-hoy"></p>
+        </div>
+      </div>
+
+      <div class="home-grid">
+        <div class="stat-card"><div class="num" id="stat-tareas">0</div><div class="label">Tareas pendientes</div></div>
+        <div class="stat-card"><div class="num" id="stat-clases">0</div><div class="label">Clases hoy</div></div>
+        <div class="stat-card"><div class="num" id="stat-eventos">0</div><div class="label">Próximos eventos</div></div>
+        <div class="stat-card"><div class="num" id="stat-recordatorios">0</div><div class="label">Recordatorios activos</div></div>
+      </div>
+
+      <div class="widget-panel" id="home-widget" aria-live="polite"></div>
+
+      <div class="home-section">
+        <h2><span class="dot"></span>Clases de hoy</h2>
+        <div class="ruled" id="home-clases"></div>
+      </div>
+
+      <div class="home-section">
+        <h2><span class="dot"></span>Próximo a vencer</h2>
+        <div class="ruled" id="home-tareas"></div>
+      </div>
+    </section>
+
+    <!-- HORARIO -->
+    <section class="page" id="page-horario">
+      <div class="page-head">
+        <div>
+          <h1>Horario de clases</h1>
+          <p>Tu semana, de un vistazo.</p>
+        </div>
+        <div class="page-actions">
+          <button class="btn btn-ghost" id="btn-widget-horario">Abrir widget</button>
+          <button class="btn btn-primary" id="btn-add-clase">+ Agregar clase</button>
+        </div>
+      </div>
+      <div class="week-grid" id="week-grid"></div>
+    </section>
+
+    <!-- TAREAS -->
+    <section class="page" id="page-tareas">
+      <div class="page-head">
+        <div>
+          <h1>Tareas</h1>
+          <p>Lo que hay que entregar.</p>
+        </div>
+        <button class="btn btn-primary" id="btn-add-tarea">+ Nueva tarea</button>
+      </div>
+      <div class="ruled" id="lista-tareas"></div>
+    </section>
+
+    <!-- EVENTOS -->
+    <section class="page" id="page-eventos">
+      <div class="page-head">
+        <div>
+          <h1>Eventos</h1>
+          <p>Exámenes, juntas y actividades.</p>
+        </div>
+        <button class="btn btn-primary" id="btn-add-evento">+ Nuevo evento</button>
+      </div>
+      <div class="ruled" id="lista-eventos"></div>
+    </section>
+
+    <!-- RECORDATORIOS -->
+    <section class="page" id="page-recordatorios">
+      <div class="page-head">
+        <div>
+          <h1>Recordatorios</h1>
+          <p>Notas rápidas para no olvidar nada.</p>
+        </div>
+        <button class="btn btn-primary" id="btn-add-recordatorio">+ Nuevo recordatorio</button>
+      </div>
+      <div class="ruled" id="lista-recordatorios"></div>
+    </section>
+  </main>
+</div>
+
+<!-- Modal: Clase -->
+<div class="modal-backdrop" id="modal-clase">
+  <form class="modal" id="form-clase">
+    <h2>Nueva clase</h2>
+    <div class="field">
+      <label for="clase-materia">Materia</label>
+      <input type="text" id="clase-materia" required placeholder="Ej. Matemáticas" />
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label for="clase-dia">Día</label>
+        <select id="clase-dia">
+          <option value="lunes">Lunes</option>
+          <option value="martes">Martes</option>
+          <option value="miercoles">Miércoles</option>
+          <option value="jueves">Jueves</option>
+          <option value="viernes">Viernes</option>
+          <option value="sabado">Sábado</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="clase-hora">Hora</label>
+        <input type="time" id="clase-hora" required />
+      </div>
+    </div>
+    <div class="field">
+      <label for="clase-salon">Salón / Profesor (opcional)</label>
+      <input type="text" id="clase-salon" placeholder="Ej. Aula 4, Prof. Ríos" />
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-ghost" data-close-modal="modal-clase">Cancelar</button>
+      <button type="submit" class="btn btn-primary">Guardar</button>
+    </div>
+  </form>
+</div>
+
+<!-- Modal: Tarea -->
+<div class="modal-backdrop" id="modal-tarea">
+  <form class="modal" id="form-tarea">
+    <h2>Nueva tarea</h2>
+    <div class="field">
+      <label for="tarea-titulo">Título</label>
+      <input type="text" id="tarea-titulo" required placeholder="Ej. Ensayo de historia" />
+    </div>
+    <div class="field">
+      <label for="tarea-materia">Materia (opcional)</label>
+      <input type="text" id="tarea-materia" placeholder="Ej. Historia" />
+    </div>
+    <div class="field">
+      <label for="tarea-fecha">Fecha de entrega</label>
+      <input type="date" id="tarea-fecha" />
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-ghost" data-close-modal="modal-tarea">Cancelar</button>
+      <button type="submit" class="btn btn-primary">Guardar</button>
+    </div>
+  </form>
+</div>
+
+<!-- Modal: Evento -->
+<div class="modal-backdrop" id="modal-evento">
+  <form class="modal" id="form-evento">
+    <h2>Nuevo evento</h2>
+    <div class="field">
+      <label for="evento-titulo">Título</label>
+      <input type="text" id="evento-titulo" required placeholder="Ej. Examen de química" />
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label for="evento-fecha">Fecha</label>
+        <input type="date" id="evento-fecha" required />
+      </div>
+      <div class="field">
+        <label for="evento-hora">Hora (opcional)</label>
+        <input type="time" id="evento-hora" />
+      </div>
+    </div>
+    <div class="field">
+      <label for="evento-lugar">Lugar (opcional)</label>
+      <input type="text" id="evento-lugar" placeholder="Ej. Auditorio" />
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-ghost" data-close-modal="modal-evento">Cancelar</button>
+      <button type="submit" class="btn btn-primary">Guardar</button>
+    </div>
+  </form>
+</div>
+
+<!-- Modal: Recordatorio -->
+<div class="modal-backdrop" id="modal-recordatorio">
+  <form class="modal" id="form-recordatorio">
+    <h2>Nuevo recordatorio</h2>
+    <div class="field">
+      <label for="recordatorio-texto">Nota</label>
+      <textarea id="recordatorio-texto" required placeholder="Ej. Llevar el permiso firmado"></textarea>
+    </div>
+    <div class="field">
+      <label for="recordatorio-fecha">Fecha (opcional)</label>
+      <input type="date" id="recordatorio-fecha" />
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-ghost" data-close-modal="modal-recordatorio">Cancelar</button>
+      <button type="submit" class="btn btn-primary">Guardar</button>
+    </div>
+  </form>
+</div>
+
+<div id="toast"></div>
+
+<script src="app.js"></script>
+</body>
+</html>

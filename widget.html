@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Horario Widget</title>
+  <style>
+    :root {
+      --bg: #f7f5ef;
+      --board: #1F3D33;
+      --board-light: #28493D;
+      --paper: #fffefb;
+      --line: #e3dfcf;
+      --ink: #20291f;
+      --ink-soft: #5b6459;
+      --marigold: #e8a33d;
+      --teal-soft: #e2eee8;
+      --shadow: 0 10px 30px rgba(31, 61, 51, 0.15);
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; }
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(180deg, #f5f2ea 0%, #f0ede7 100%);
+      color: var(--ink);
+      display: flex;
+      justify-content: center;
+      align-items: stretch;
+      padding: 18px;
+    }
+
+    .widget {
+      width: min(100%, 360px);
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .widget-header {
+      background: linear-gradient(135deg, var(--board) 0%, var(--board-light) 100%);
+      color: #fff;
+      padding: 16px 18px 14px;
+    }
+
+    .widget-header h1 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+
+    .widget-header p {
+      margin: 5px 0 0;
+      font-size: 12px;
+      opacity: 0.8;
+    }
+
+    .widget-body {
+      padding: 14px;
+    }
+
+    .day-block {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--bg);
+      margin-bottom: 10px;
+      overflow: hidden;
+    }
+
+    .day-title {
+      background: var(--teal-soft);
+      color: var(--board);
+      padding: 8px 12px;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: capitalize;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .class-list {
+      padding: 8px 10px 10px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .class-item {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 8px 10px;
+    }
+
+    .class-time {
+      display: block;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--board);
+      margin-bottom: 4px;
+    }
+
+    .class-materia {
+      font-size: 14px;
+      font-weight: 600;
+      display: block;
+      margin-bottom: 2px;
+    }
+
+    .class-room {
+      font-size: 12px;
+      color: var(--ink-soft);
+    }
+
+    .empty {
+      padding: 18px 12px;
+      text-align: center;
+      color: var(--ink-soft);
+      font-size: 13px;
+      border: 1px dashed var(--line);
+      border-radius: 12px;
+      background: var(--bg);
+    }
+  </style>
+</head>
+<body>
+  <div class="widget">
+    <div class="widget-header">
+      <h1>Horario</h1>
+      <p>Vista rápida de la semana</p>
+    </div>
+    <div class="widget-body" id="widget-body"></div>
+  </div>
+
+  <script>
+    const DIAS = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'];
+    const DIA_LABEL = { lunes: 'Lunes', martes: 'Martes', miercoles: 'Miércoles', jueves: 'Jueves', viernes: 'Viernes', sabado: 'Sábado' };
+
+    function lsGetAll(store) {
+      try {
+        return JSON.parse(localStorage.getItem(`agenda-escolar:${store}`) || '[]');
+      } catch {
+        return [];
+      }
+    }
+
+    function renderWidget() {
+      const body = document.getElementById('widget-body');
+      const clases = lsGetAll('clases');
+
+      if (!clases.length) {
+        body.innerHTML = '<div class="empty">No tienes clases registradas.</div>';
+        return;
+      }
+
+      const bloques = DIAS.map((dia) => {
+        const clasesDelDia = clases
+          .filter((c) => c.dia === dia)
+          .sort((a, b) => a.hora.localeCompare(b.hora));
+
+        return `
+          <div class="day-block">
+            <div class="day-title">${DIA_LABEL[dia]}</div>
+            <div class="class-list">
+              ${clasesDelDia.length
+                ? clasesDelDia.map((c) => `
+                    <div class="class-item">
+                      <span class="class-time">${c.hora}</span>
+                      <span class="class-materia">${String(c.materia || '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]))}</span>
+                      <span class="class-room">${c.salon ? String(c.salon).replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char])) : 'Sin salón'}</span>
+                    </div>
+                  `).join('')
+                : '<div class="empty">Sin clases</div>'}
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      body.innerHTML = bloques;
+    }
+
+    renderWidget();
+    window.addEventListener('storage', renderWidget);
+  </script>
+</body>
+</html>
